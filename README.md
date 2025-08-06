@@ -1,10 +1,4 @@
-# 🌟 ChatApp P## 📝 Introducción y Objetivos
-
-Partiendo de las funcionalidades base desarrolladas en sistemas de chat con autenticación tradicional basada en JWT, este proyecto representa una evolución significativa hacia estándares de la industria moderna. La implementación integra OAuth 2.0 como mecanismo de autenticación externa, elevando tanto la seguridad como la experiencia de usuario del sistema de mensajería en tiempo real.
-
-La aplicación mantiene su arquitectura de seguridad original basada en JWT, pero incorpora la capacidad de autenticación mediante proveedores externos como Google, permitiendo que los usuarios accedan con un solo clic en lugar de completar formularios de registro tradicionales. Una vez que el proveedor externo verifica la identidad del usuario, el sistema genera su propio JWT para autorizar operaciones posteriores como el envío de mensajes y la gestión de sesiones de chat.
-
-Esta implementación demuestra la aplicación práctica del framework de autorización OAuth 2.0 sobre un proyecto funcional, integrando Passport.js para gestionar las estrategias de autenticación y modificando el frontend para soportar el ciclo de vida completo del JWT recibido tras la autenticación externa.- Sistema de Chat en Tiempo Real
+# 🌟 ChatApp Pro - Sistema de Chat en Tiempo Real
 
 <div align="center">
 
@@ -18,9 +12,15 @@ Esta implementación demuestra la aplicación práctica del framework de autoriz
 
 ---
 
-## � Introducción y Objetivos
+## 📝 Introducción y Objetivos
 
-Este proyecto implementa un **sistema de chat en tiempo real** con capacidades de autenticación múltiple, desarrollado como parte del programa académico de Sistemas Distribuidos. El objetivo principal es demostrar la implementación de tecnologías web modernas para crear una aplicación de mensajería instantánea funcional y segura.
+Partiendo de las funcionalidades base desarrolladas en sistemas de chat con autenticación tradicional basada en JWT, este proyecto representa una evolución significativa hacia estándares de la industria moderna. La implementación integra OAuth 2.0 como mecanismo de autenticación externa, elevando tanto la seguridad como la experiencia de usuario del sistema de mensajería en tiempo real.
+
+Como parte de una actividad de laboratorio enfocada en tecnologías de autenticación avanzadas, esta aplicación mantiene su arquitectura de seguridad original basada en JWT, pero incorpora la capacidad de autenticación mediante proveedores externos como Google. Esta integración permite que los usuarios accedan con un solo clic en lugar de completar formularios de registro tradicionales, mejorando significativamente la experiencia de usuario mientras se mantienen los más altos estándares de seguridad.
+
+El desarrollo aborda desafíos reales de la industria tecnológica moderna, donde la interoperabilidad entre sistemas y la facilidad de acceso son factores críticos para el éxito de aplicaciones web. Una vez que el proveedor externo verifica la identidad del usuario, el sistema genera su propio JWT para autorizar operaciones posteriores como el envío de mensajes, gestión de sesiones de chat y mantenimiento del estado de conexión en tiempo real.
+
+Esta implementación demuestra la aplicación práctica del framework de autorización OAuth 2.0 sobre un proyecto funcional, integrando bibliotecas especializadas como Passport.js para gestionar las estrategias de autenticación y modificando el frontend para soportar el ciclo de vida completo del JWT recibido tras la autenticación externa. El resultado es un sistema robusto que combina la conveniencia de la autenticación social con la seguridad de tokens JWT personalizados.
 
 ### Objetivos Específicos:
 - ✅ Aplicar los conceptos del framework de autorización OAuth 2.0 sobre un proyecto real y funcional
@@ -105,7 +105,7 @@ npm start
 **6. Acceder a la aplicación:**
 - Abrir navegador en `http://localhost:3001/client-example.html`
 
-## � Capturas de Pantalla y Demostración
+## 📸 Capturas de Pantalla y Demostración
 
 ### 1. Pantalla de Inicio de Sesión
 ![Pantalla de Login](https://i.imgur.com/eXCLaWI.png)
@@ -147,7 +147,7 @@ El usuario autenticado de forma tradicional (jhonguaman-10@hotmail.com) aparece 
 
 Vista final del chat mostrando la conversación completa entre ambos usuarios: el mensaje inicial "Holaaaaaaa" del usuario autenticado con Google (jsguaman7@espe.edu.ec), seguido del mensaje "Hola desde la cuenta registrada sin google" del usuario tradicional (jhonguaman-10@hotmail.com), y finalmente "Aquí estoy desde la cuenta vinculada con google" del usuario Google. Esta captura demuestra exitosamente la comunicación en tiempo real entre diferentes métodos de autenticación.
 
-## �📁 Estructura del Proyecto
+## 📁 Estructura del Proyecto
 
 ```
 ChatConAutenticacion/
@@ -171,8 +171,6 @@ ChatConAutenticacion/
 ├── auth-callback.html       # Callback OAuth
 ├── app.js                   # Archivo principal
 └── package.json
-```
-
 ```
 
 ## 🎯 Funcionalidades Implementadas
