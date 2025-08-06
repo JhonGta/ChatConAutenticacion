@@ -18,6 +18,14 @@ class UserRepository {
     }
   }
 
+  async findByGoogleId(googleId) {
+    try {
+      return await User.findOne({ googleId });
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async findById(id) {
     try {
       return await User.findById(id).select("-password");
@@ -62,4 +70,4 @@ class UserRepository {
   }
 }
 
-module.exports = new UserRepository();
+module.exports = { UserRepository: UserRepository };

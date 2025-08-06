@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Autenticación Google - Callback</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            text-align: center;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 10px;
+            padding: 40px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .loading {
+            font-size: 18px;
+            color: #007bff;
+        }
+        .error {
+            color: #dc3545;
+            background: #f8d7da;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .success {
+            color: #155724;
+            background: #d4edda;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 Procesando Autenticación</h1>
+        <p class="loading">Verificando credenciales de Google...</p>
+        <div id="status"></div>
+    </div>
+
+    <script>
+        function getQueryParam(param) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(param);
+        }
+
+        function showStatus(message, type = 'loading') {
+            const statusDiv = document.getElementById('status');
+            const className = type === 'error' ? 'error' : (type === 'success' ? 'success' : 'loading');
+            statusDiv.innerHTML = `<div class="${className}">${message}</div>`;
+        }
+
+        function processAuth() {
+            const token = getQueryParam('token');
+            const error = getQueryParam('error');
+
+            if (error) {
+                showStatus('❌ Error en la autenticación con Google. Por favor, intenta nuevamente.', 'error');
+                setTimeout(() => {
+                    window.location.href = 'client-example.html';
+                }, 3000);
+                return;
+            }
+
+            if (token) {
+                // Guardar token en localStorage
+                localStorage.setItem('token', token);
+                
+                showStatus('✅ ¡Autenticación exitosa! Redirigiendo al chat...', 'success');
+                
+                // Redirigir al chat después de 2 segundos
+                setTimeout(() => {
+                    window.location.href = 'client-example.html';
+                }, 2000);
+            } else {
+                showStatus('❌ No se recibió token de autenticación. Redirigiendo...', 'error');
+                setTimeout(() => {
+                    window.location.href = 'client-example.html';
+                }, 3000);
+            }
+        }
+
+        // Ejecutar cuando la página cargue
+        window.onload = processAuth;
+    </script>
+</body>
+</html>

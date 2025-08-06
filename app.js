@@ -3,7 +3,11 @@ const http = require("http");
 const socketIo = require("socket.io");
 const cors = require("cors");
 const mongoose = require("mongoose");
+const passport = require("passport");
 require("dotenv").config();
+
+// Configurar Passport
+require("./src/config/passport-setup");
 
 const authRoutes = require("./src/api/routes/auth.routes");
 const { connectDatabase } = require("./src/config/database");
@@ -26,6 +30,9 @@ const io = socketIo(server, {
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Inicializar Passport
+app.use(passport.initialize());
 
 // Conectar a la base de datos
 connectDatabase();

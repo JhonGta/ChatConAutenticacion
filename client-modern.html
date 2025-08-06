@@ -172,6 +172,12 @@
             text-decoration: none;
         }
 
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
         .btn-primary {
             background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
             color: white;
@@ -179,7 +185,7 @@
             margin-bottom: 15px;
         }
 
-        .btn-primary:hover {
+        .btn-primary:hover:not(:disabled) {
             transform: translateY(-2px);
             box-shadow: 0 10px 20px rgba(79, 70, 229, 0.3);
         }
@@ -191,7 +197,7 @@
             width: 100%;
         }
 
-        .btn-google:hover {
+        .btn-google:hover:not(:disabled) {
             background: #f9fafb;
             border-color: #d1d5db;
             transform: translateY(-2px);
@@ -310,7 +316,7 @@
             border-bottom: 1px solid #e5e7eb;
             background: white;
             display: flex;
-            justify-content: between;
+            justify-content: space-between;
             align-items: center;
         }
 
@@ -684,35 +690,69 @@
         </div>
     </div>
 
-    <div id="status"></div>
+    <div id="status" class="status" style="display: none;"></div>
 
     <script>
         let socket;
         let currentUser = null;
-        let typingTimer;
+        let typingTimeout = null;
+        let isTyping = false;
+        let connectedUsers = new Set();
 
-        const API_URL = 'http://localhost:3001';
+        // Check for existing session on page load
+        window.onload = function () {
+            checkExistingSession();
+            handleOAuthCallback();
+        };
 
-        function showStatus(message, type = 'success') {
-            const statusDiv = document.getElementById('status');
-            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
-            setTimeout(() => statusDiv.innerHTML = '', 5000);
+        function checkExistingSession() {
+            const token = localStorage.getItem('token');
+            if (token) {
+                try {
+                    const payload = JSON.parse(atob(token.split('.')[1]));
+                    if (payload.exp > Date.now() / 1000) {
+                        currentUser = {
+                            email: payload.email,
+                            displayName: payload.displayName || payload.email,
+                            userId: payload.userId || payload.id,
+                            isGoogleUser: payload.isGoogleUser || false
+                        };
+                        showChatSection();
+                        connectSocket();
+                        return;
+                    }
+                } catch (e) {
+                    console.error('Error parsing token:', e);
+                }
+                localStorage.removeItem('token');
+            }
         }
 
-        async function makeRequest(endpoint, method = 'GET', data = null) {
-            const options = {
-                method,
-                headers: {
-                    'Content-Type': 'application/json',
-                }
-            };
+        function handleOAuthCallback() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('token');
+            const error = urlParams.get('error');
 
-            if (data) {
-                options.body = JSON.stringify(data);
+            if (error) {
+                showStatus('Error de autenticación: ' + decodeURIComponent(error), 'error');
+                return;
             }
 
-            const response = await fetch(`${API_URL}${endpoint}`, options);
-            return await response.json();
+            if (token) {
+                localStorage.setItem('token', token);
+                window.history.replaceState({}, document.title, window.location.pathname);
+                checkExistingSession();
+            }
+        }
+
+        function switchTab(tab) {
+            // Update tab buttons
+            document.querySelectorAll('.auth-tab').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Update forms
+            document.querySelectorAll('.auth-form').forEach(form => form.classList.remove('active'));
+            document.getElementById(tab + '-form').classList.add('active');
         }
 
         async function login() {
@@ -720,25 +760,46 @@
             const password = document.getElementById('loginPassword').value;
 
             if (!email || !password) {
-                showStatus('Por favor ingresa email y password', 'error');
+                showStatus('Por favor completa todos los campos', 'error');
                 return;
             }
 
-            try {
-                const response = await makeRequest('/api/auth/login', 'POST', { email, password });
+            const btn = event.target;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<div class="loading"></div> Iniciando sesión...';
+            btn.disabled = true;
 
-                if (response.success) {
-                    currentUser = response.data.user;
-                    localStorage.setItem('token', response.data.token);
-                    showStatus('Login exitoso', 'success');
+            try {
+                const response = await fetch('http://localhost:3001/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    localStorage.setItem('token', data.token);
+                    currentUser = {
+                        email: data.user.email,
+                        displayName: data.user.displayName || data.user.email,
+                        userId: data.user._id,
+                        isGoogleUser: data.user.isGoogleUser || false
+                    };
+                    showStatus('¡Bienvenido de vuelta!', 'success');
                     showChatSection();
-                    connectToChat(response.data.token);
+                    connectSocket();
                 } else {
-                    showStatus(response.error, 'error');
+                    showStatus(data.message || 'Error al iniciar sesión', 'error');
                 }
             } catch (error) {
-                showStatus('Error en el login', 'error');
-                console.error('Error:', error);
+                console.error('Login error:', error);
+                showStatus('Error de conexión', 'error');
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
             }
         }
 
@@ -747,179 +808,327 @@
             const password = document.getElementById('registerPassword').value;
 
             if (!email || !password) {
-                showStatus('Por favor ingresa email y password', 'error');
+                showStatus('Por favor completa todos los campos', 'error');
                 return;
             }
 
-            try {
-                const response = await makeRequest('/api/auth/register', 'POST', { email, password });
+            if (password.length < 6) {
+                showStatus('La contraseña debe tener al menos 6 caracteres', 'error');
+                return;
+            }
 
-                if (response.success) {
-                    currentUser = response.data.user;
-                    localStorage.setItem('token', response.data.token);
-                    showStatus('Registro exitoso', 'success');
+            const btn = event.target;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<div class="loading"></div> Creando cuenta...';
+            btn.disabled = true;
+
+            try {
+                const response = await fetch('http://localhost:3001/api/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    localStorage.setItem('token', data.token);
+                    currentUser = {
+                        email: data.user.email,
+                        displayName: data.user.displayName || data.user.email,
+                        userId: data.user._id,
+                        isGoogleUser: false
+                    };
+                    showStatus('¡Cuenta creada exitosamente!', 'success');
                     showChatSection();
-                    connectToChat(response.data.token);
+                    connectSocket();
                 } else {
-                    showStatus(response.error, 'error');
+                    showStatus(data.message || 'Error al registrarse', 'error');
                 }
             } catch (error) {
-                showStatus('Error en el registro', 'error');
-                console.error('Error:', error);
+                console.error('Register error:', error);
+                showStatus('Error de conexión', 'error');
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
             }
+        }
+
+        function loginWithGoogle() {
+            showStatus('Redirigiendo a Google...', 'success');
+            window.location.href = 'http://localhost:3001/api/auth/google';
         }
 
         function showChatSection() {
             document.getElementById('auth-section').style.display = 'none';
             document.getElementById('chat-section').style.display = 'block';
+            
+            // Update user info in header
+            const userInfo = document.getElementById('userInfo');
+            const userName = document.getElementById('currentUserName');
+            userInfo.style.display = 'flex';
+            userName.textContent = currentUser.displayName;
+            
+            // Set avatar letter
+            const avatar = userInfo.querySelector('.user-avatar');
+            avatar.textContent = currentUser.displayName.charAt(0).toUpperCase();
         }
 
-        function connectToChat(token) {
-            console.log('🔌 Conectando al chat con token:', token.substring(0, 50) + '...');
+        function connectSocket() {
+            const token = localStorage.getItem('token');
             
-            socket = io(API_URL, {
+            socket = io('http://localhost:3001', {
                 auth: {
                     token: token
-                }
+                },
+                transports: ['websocket', 'polling']
             });
 
             socket.on('connect', () => {
-                console.log('✅ Conectado al chat');
+                console.log('Conectado al servidor');
                 showStatus('Conectado al chat', 'success');
             });
 
-            socket.on('recentMessages', (messages) => {
-                console.log('📜 Mensajes recientes recibidos:', messages);
-                const messagesDiv = document.getElementById('messages');
-                messagesDiv.innerHTML = '';
-                messages.reverse().forEach(message => {
-                    displayMessage(message);
-                });
+            socket.on('disconnect', () => {
+                console.log('Desconectado del servidor');
+                showStatus('Desconectado del servidor', 'error');
             });
 
-            socket.on('newMessage', (message) => {
-                console.log('📨 Nuevo mensaje recibido:', message);
-                displayMessage(message);
+            socket.on('connect_error', (error) => {
+                console.error('Error de conexión:', error);
+                showStatus('Error de conexión al chat', 'error');
             });
 
-            socket.on('userConnected', (user) => {
-                console.log('👤 Usuario conectado:', user);
-                const userName = user.name || user.email;
-                showStatus(`${userName} se conectó`, 'success');
+            socket.on('userConnected', (data) => {
+                console.log('Usuario conectado:', data);
+                connectedUsers.add(data.userId);
+                updateConnectedUsers();
             });
 
-            socket.on('userDisconnected', (user) => {
-                console.log('👤 Usuario desconectado:', user);
-                const userName = user.name || user.email;
-                showStatus(`${userName} se desconectó`, 'error');
+            socket.on('userDisconnected', (data) => {
+                console.log('Usuario desconectado:', data);
+                connectedUsers.delete(data.userId);
+                updateConnectedUsers();
             });
 
             socket.on('connectedUsers', (users) => {
-                console.log('👥 Lista de usuarios conectados:', users);
-                displayConnectedUsers(users);
+                console.log('Usuarios conectados:', users);
+                connectedUsers = new Set(users.map(u => u.userId));
+                updateConnectedUsers();
+            });
+
+            socket.on('newMessage', (messageData) => {
+                console.log('Nuevo mensaje recibido:', messageData);
+                displayMessage(messageData);
             });
 
             socket.on('userTyping', (data) => {
-                const typingDiv = document.getElementById('typing-indicator');
-                if (data.isTyping) {
-                    const userName = data.name || data.email;
-                    typingDiv.textContent = `${userName} está escribiendo...`;
-                } else {
-                    typingDiv.textContent = '';
-                }
+                showTypingIndicator(data.user);
             });
 
-            socket.on('error', (error) => {
-                console.error('❌ Error del socket:', error);
-                showStatus(`Error: ${error.message}`, 'error');
+            socket.on('userStoppedTyping', (data) => {
+                hideTypingIndicator();
             });
 
-            socket.on('disconnect', () => {
-                console.log('❌ Desconectado del chat');
-                showStatus('Desconectado del chat', 'error');
-            });
+            // Load recent messages
+            loadMessages();
         }
 
-        function displayMessage(message) {
-            const messagesDiv = document.getElementById('messages');
-            const messageElement = document.createElement('div');
-            messageElement.className = 'message';
+        async function loadMessages() {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch('http://localhost:3001/api/messages', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
 
-            const time = new Date(message.createdAt).toLocaleTimeString();
-            const userName = message.user.displayName || message.user.email;
-            messageElement.innerHTML = `
-                <div class="user">${userName}</div>
-                <div>${message.text}</div>
-                <div class="time">${time}</div>
+                if (response.ok) {
+                    const messages = await response.json();
+                    const messagesContainer = document.getElementById('messages');
+                    messagesContainer.innerHTML = '';
+                    
+                    messages.forEach(message => {
+                        displayMessage(message);
+                    });
+                    
+                    scrollToBottom();
+                }
+            } catch (error) {
+                console.error('Error loading messages:', error);
+            }
+        }
+
+        function displayMessage(messageData) {
+            const messagesContainer = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message';
+
+            const time = new Date(messageData.timestamp || messageData.createdAt).toLocaleTimeString();
+            const userName = messageData.user || messageData.userName;
+            const content = messageData.message || messageData.text || messageData.content;
+            const userInitial = userName.charAt(0).toUpperCase();
+            
+            messageDiv.innerHTML = `
+                <div class="message-header">
+                    <div class="message-avatar">${userInitial}</div>
+                    <div class="message-user">${userName}</div>
+                    <div class="message-time">${time}</div>
+                </div>
+                <div class="message-content">${escapeHtml(content)}</div>
             `;
 
-            messagesDiv.appendChild(messageElement);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            messagesContainer.appendChild(messageDiv);
+            scrollToBottom();
         }
 
-        function displayConnectedUsers(users) {
-            const connectedUsersDiv = document.getElementById('connectedUsers');
-            connectedUsersDiv.innerHTML = users.map(user => `
-                <div>${user.name || user.email}</div>
-            `).join('');
+        function updateConnectedUsers() {
+            const usersContainer = document.getElementById('connectedUsers');
+            const onlineCount = document.getElementById('onlineCount');
+            
+            onlineCount.textContent = `${connectedUsers.size} usuarios en línea`;
+            
+            usersContainer.innerHTML = '';
+            connectedUsers.forEach(userId => {
+                const userDiv = document.createElement('div');
+                userDiv.className = 'user-item';
+                userDiv.innerHTML = `
+                    <div class="user-avatar-small">U</div>
+                    <span>Usuario ${userId.substring(0, 8)}</span>
+                    <div class="user-status"></div>
+                `;
+                usersContainer.appendChild(userDiv);
+            });
         }
 
         function sendMessage() {
             const messageInput = document.getElementById('messageInput');
-            const text = messageInput.value.trim();
+            const message = messageInput.value.trim();
 
-            console.log('📤 Enviando mensaje:', text);
+            if (!message || !socket) return;
 
-            if (!text) {
-                console.log('❌ Mensaje vacío, no se envía');
-                return;
-            }
+            const messageData = {
+                message: message,
+                text: message, // Compatibility
+                user: currentUser.displayName,
+                userId: currentUser.userId,
+                timestamp: new Date().toISOString()
+            };
 
-            socket.emit('sendMessage', { text });
+            socket.emit('sendMessage', messageData);
             messageInput.value = '';
-
-            // Detener indicador de escritura
-            socket.emit('typing', { isTyping: false });
+            adjustTextareaHeight(messageInput);
+            
+            // Stop typing indicator
+            if (isTyping) {
+                socket.emit('stopTyping');
+                isTyping = false;
+            }
         }
 
         function handleKeyPress(event) {
-            if (event.key === 'Enter') {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
                 sendMessage();
-            } else {
-                // Indicador de escritura
-                socket.emit('typing', { isTyping: true });
-
-                clearTimeout(typingTimer);
-                typingTimer = setTimeout(() => {
-                    socket.emit('typing', { isTyping: false });
-                }, 1000);
             }
         }
 
-        // Verificar si ya hay un token guardado
-        window.onload = function () {
-            const token = localStorage.getItem('token');
-            if (token) {
-                showChatSection();
-                connectToChat(token);
+        function handleTyping() {
+            const messageInput = document.getElementById('messageInput');
+            adjustTextareaHeight(messageInput);
+            
+            if (!socket) return;
+
+            if (!isTyping) {
+                socket.emit('typing', { user: currentUser.displayName });
+                isTyping = true;
             }
-        };
+
+            clearTimeout(typingTimeout);
+            typingTimeout = setTimeout(() => {
+                if (isTyping) {
+                    socket.emit('stopTyping');
+                    isTyping = false;
+                }
+            }, 2000);
+        }
+
+        function adjustTextareaHeight(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = Math.min(textarea.scrollHeight, 100) + 'px';
+        }
+
+        function showTypingIndicator(user) {
+            const indicator = document.getElementById('typing-indicator');
+            indicator.innerHTML = `<i class="fas fa-ellipsis-h"></i> ${user} está escribiendo...`;
+            indicator.style.display = 'block';
+            scrollToBottom();
+        }
+
+        function hideTypingIndicator() {
+            const indicator = document.getElementById('typing-indicator');
+            indicator.style.display = 'none';
+        }
+
+        function scrollToBottom() {
+            const messagesContainer = document.getElementById('messages');
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+            statusDiv.style.display = 'block';
+
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 3000);
+        }
 
         function logout() {
             localStorage.removeItem('token');
+            if (socket) {
+                socket.disconnect();
+            }
             currentUser = null;
-            socket.disconnect();
-            document.getElementById('chat-section').style.display = 'none';
+            
             document.getElementById('auth-section').style.display = 'block';
+            document.getElementById('chat-section').style.display = 'none';
+            document.getElementById('userInfo').style.display = 'none';
+            
+            // Clear forms
+            document.getElementById('loginEmail').value = '';
+            document.getElementById('loginPassword').value = '';
+            document.getElementById('registerEmail').value = '';
+            document.getElementById('registerPassword').value = '';
+            
+            // Reset to login tab
+            document.querySelectorAll('.auth-tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.auth-form').forEach(form => form.classList.remove('active'));
+            document.querySelector('.auth-tab').classList.add('active');
+            document.getElementById('login-form').classList.add('active');
+            
             showStatus('Sesión cerrada', 'success');
         }
 
-        function loginWithGoogle() {
-            // Redirigir a la ruta de autenticación de Google
-            window.location.href = `${API_URL}/api/auth/google`;
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         }
 
+        // Auto-resize textarea
+        document.addEventListener('DOMContentLoaded', function() {
+            const messageInput = document.getElementById('messageInput');
+            if (messageInput) {
+                messageInput.addEventListener('input', function() {
+                    adjustTextareaHeight(this);
+                });
+            }
+        });
     </script>
 </body>
-
 </html>

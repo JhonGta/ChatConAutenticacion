@@ -1,5 +1,7 @@
-const jwt = require("jsonwebtoken");
-const userRepository = require("../repositories/user.repository");
+const { verifyToken } = require("../utils/jwt.utils");
+const { UserRepository } = require("../repositories/user.repository");
+
+const userRepository = new UserRepository();
 
 const authMiddleware = async (req, res, next) => {
   try {
@@ -11,7 +13,8 @@ const authMiddleware = async (req, res, next) => {
       });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = verifyToken(token);
+    // Ahora siempre tendremos userId gracias al helper
     const user = await userRepository.findById(decoded.userId);
 
     if (!user) {
@@ -41,16 +44,23 @@ const authMiddleware = async (req, res, next) => {
   }
 };
 
-const verifyWebSocketToken = (token) => {
+const verifyWebSocketToken = async (token) => {
   try {
     if (!token) {
       throw new Error("Token requerido");
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    return decoded;
+    const decoded = verifyToken(token);
+    // Ahora siempre tendremos userId gracias al helper
+    const user = await userRepository.findById(decoded.userId);
+    
+    if (!user) {
+      throw new Error("Usuario no encontrado");
+    }
+    
+    return { decoded, user };
   } catch (error) {
-    throw new Error("Token inválido");
+    throw new Error("Token inválido: " + error.message);
   }
 };
 

@@ -1,5 +1,7 @@
-const userRepository = require("../../infrastructure/repositories/user.repository");
-const jwt = require("jsonwebtoken");
+const { UserRepository } = require("../../infrastructure/repositories/user.repository");
+const { generateToken } = require("../../infrastructure/utils/jwt.utils");
+
+const userRepository = new UserRepository();
 
 class LoginUserUseCase {
   async execute(credentials) {
@@ -22,12 +24,8 @@ class LoginUserUseCase {
       throw new Error("Credenciales inválidas");
     }
 
-    // Generar token JWT
-    const token = jwt.sign(
-      { userId: user._id, email: user.email },
-      process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN || "24h" }
-    );
+    // Generar token JWT usando helper
+    const token = generateToken(user);
 
     return {
       user: {
