@@ -436,6 +436,8 @@
             max-height: 100px;
             min-height: 44px;
             transition: all 0.3s ease;
+            font-family: inherit;
+            line-height: 1.4;
         }
 
         .message-input:focus {
@@ -671,7 +673,7 @@
                                 class="message-input" 
                                 placeholder="Escribe tu mensaje..."
                                 onkeypress="handleKeyPress(event)"
-                                oninput="handleTyping()"
+                                oninput="handleTyping(); autoResize(this)"
                                 rows="1"
                             ></textarea>
                             <button class="send-btn" onclick="sendMessage()" id="sendBtn">
@@ -699,6 +701,28 @@
         window.onload = function () {
             checkExistingSession();
         };
+
+        // Prevenir múltiples conexiones cuando se cierra la ventana
+        window.addEventListener('beforeunload', function() {
+            if (socket && socket.connected) {
+                socket.disconnect();
+            }
+        });
+
+        // Prevenir múltiples conexiones cuando la página pierde focus
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                // Página está oculta - no desconectar, solo marcar como inactivo
+                console.log('📱 Página en background');
+            } else {
+                // Página visible de nuevo
+                console.log('📱 Página activa');
+                if (currentUser && (!socket || !socket.connected)) {
+                    console.log('🔄 Reconectando...');
+                    connectSocket();
+                }
+            }
+        });
 
         function checkExistingSession() {
             const token = localStorage.getItem('token');
@@ -870,6 +894,12 @@
                 return;
             }
             
+            // Cerrar conexión existente si existe
+            if (socket && socket.connected) {
+                console.log('🔌 Cerrando conexión existente...');
+                socket.disconnect();
+            }
+            
             console.log('🔌 Conectando al chat con token:', token.substring(0, 50) + '...');
             console.log('🔌 Conectando a:', API_URL);
             
@@ -878,7 +908,8 @@
                     token: token
                 },
                 transports: ['websocket', 'polling'],
-                timeout: 10000
+                timeout: 10000,
+                forceNew: true // Forzar nueva conexión
             });
 
             socket.on('connect', () => {
@@ -920,7 +951,10 @@
 
             socket.on('newMessage', (messageData) => {
                 console.log('� Nuevo mensaje recibido:', messageData);
-                displayMessage(messageData);
+                // Solo mostrar mensajes de otros usuarios (evitar duplicados)
+                if (messageData.userId !== currentUser.userId) {
+                    displayMessage(messageData);
+                }
             });
 
             socket.on('recentMessages', (messages) => {
@@ -957,11 +991,15 @@
             const content = messageData.message || messageData.text || messageData.content;
             const userInitial = userName.charAt(0).toUpperCase();
             
+            // Verificar si es mensaje propio
+            const isOwnMessage = messageData.userId === currentUser.userId;
+            const messageStatus = isOwnMessage ? '<i class="fas fa-check" style="color: #10b981; margin-left: 5px; font-size: 12px;"></i>' : '';
+            
             messageElement.innerHTML = `
                 <div class="message-header">
                     <div class="message-avatar">${userInitial}</div>
-                    <div class="message-user">${userName}</div>
-                    <div class="message-time">${time}</div>
+                    <div class="message-user" style="${isOwnMessage ? 'color: #10b981; font-weight: bold;' : ''}">${userName} ${isOwnMessage ? '(Tú)' : ''}</div>
+                    <div class="message-time">${time} ${messageStatus}</div>
                 </div>
                 <div class="message-content">${escapeHtml(content)}</div>
             `;
@@ -1009,8 +1047,14 @@
                 timestamp: new Date().toISOString()
             };
 
+            // ✨ MOSTRAR MENSAJE INMEDIATAMENTE (como WhatsApp)
+            displayMessage(messageData);
+
             socket.emit('sendMessage', messageData);
             messageInput.value = '';
+            
+            // Auto-resize textarea
+            messageInput.style.height = 'auto';
 
             // Stop typing indicator
             if (isTyping) {
@@ -1104,6 +1148,11 @@
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
+        }
+
+        function autoResize(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = Math.min(textarea.scrollHeight, 100) + 'px';
         }
     </script>
 </body>

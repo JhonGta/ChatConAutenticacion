@@ -49,7 +49,7 @@ class MessageRepository {
     try {
       return await Message.find()
         .populate("user", "email displayName")
-        .sort({ createdAt: -1 })
+        .sort({ createdAt: 1 }) // Cambiar a orden ascendente (más antiguos primero)
         .limit(limit);
     } catch (error) {
       throw error;
