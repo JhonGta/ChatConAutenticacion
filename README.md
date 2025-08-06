@@ -1,4 +1,10 @@
-# 🌟 ChatApp Pro - Sistema de Chat en Tiempo Real
+# 🌟 ChatApp P## 📝 Introducción y Objetivos
+
+Partiendo de las funcionalidades base desarrolladas en sistemas de chat con autenticación tradicional basada en JWT, este proyecto representa una evolución significativa hacia estándares de la industria moderna. La implementación integra OAuth 2.0 como mecanismo de autenticación externa, elevando tanto la seguridad como la experiencia de usuario del sistema de mensajería en tiempo real.
+
+La aplicación mantiene su arquitectura de seguridad original basada en JWT, pero incorpora la capacidad de autenticación mediante proveedores externos como Google, permitiendo que los usuarios accedan con un solo clic en lugar de completar formularios de registro tradicionales. Una vez que el proveedor externo verifica la identidad del usuario, el sistema genera su propio JWT para autorizar operaciones posteriores como el envío de mensajes y la gestión de sesiones de chat.
+
+Esta implementación demuestra la aplicación práctica del framework de autorización OAuth 2.0 sobre un proyecto funcional, integrando Passport.js para gestionar las estrategias de autenticación y modificando el frontend para soportar el ciclo de vida completo del JWT recibido tras la autenticación externa.- Sistema de Chat en Tiempo Real
 
 <div align="center">
 
@@ -6,7 +12,7 @@
 
 **📚 Universidad de las Fuerzas Armadas ESPE**  
 **👨‍🎓 Estudiante: Jhon Guamán**  
-**📋 Proyecto: Sistema de Chat con Autenticación OAuth 2.0**
+**📋 Carrera: Ingeniería en Tecnologías de la Información**
 
 </div>
 
@@ -17,12 +23,13 @@
 Este proyecto implementa un **sistema de chat en tiempo real** con capacidades de autenticación múltiple, desarrollado como parte del programa académico de Sistemas Distribuidos. El objetivo principal es demostrar la implementación de tecnologías web modernas para crear una aplicación de mensajería instantánea funcional y segura.
 
 ### Objetivos Específicos:
-- ✅ Implementar comunicación en tiempo real usando WebSockets
-- ✅ Integrar autenticación OAuth 2.0 con Google
-- ✅ Desarrollar un sistema de autenticación tradicional con JWT
-- ✅ Crear una interfaz de usuario moderna y responsiva
-- ✅ Gestionar persistencia de datos con MongoDB
-- ✅ Aplicar arquitectura limpia en el desarrollo backend
+- ✅ Aplicar los conceptos del framework de autorización OAuth 2.0 sobre un proyecto real y funcional
+- ✅ Adaptar el sistema de usuarios para permitir registro e inicio de sesión mediante proveedores externos
+- ✅ Integrar la librería Passport.js para gestionar estrategias de autenticación OAuth 2.0
+- ✅ Implementar comunicación en tiempo real usando WebSockets con Socket.io
+- ✅ Permitir que usuarios autenticados externamente puedan enviar mensajes en el chat
+- ✅ Modificar el frontend para incluir opciones de "Login con..." y gestionar el JWT recibido
+- ✅ Mantener la arquitectura de seguridad JWT existente para operaciones posteriores
 
 ## 🛠️ Tecnologías Utilizadas
 
@@ -191,25 +198,17 @@ ChatConAutenticacion/
 
 ## 🎓 Conclusiones Personales
 
-### Aprendizajes Técnicos
+### 1. Comprensión Profunda de Estándares de Autenticación Modernos
 
-Durante el desarrollo de este proyecto, he consolidado conocimientos fundamentales en el desarrollo de aplicaciones web modernas y sistemas distribuidos. La implementación de WebSockets con Socket.io me ha permitido comprender profundamente los desafíos de la comunicación en tiempo real, especialmente en el manejo de múltiples conexiones simultáneas y la sincronización de estado entre clientes.
+La implementación de OAuth 2.0 con Google como proveedor externo ha consolidado mi entendimiento sobre los flujos de autorización en aplicaciones web modernas. El proceso de configuración en Google Cloud Console, la gestión de tokens de acceso y la integración con Passport.js reveló la complejidad subyacente que manejan los sistemas de autenticación externos. Esta experiencia clarificó conceptos fundamentales como el intercambio de códigos de autorización, el manejo seguro de credenciales y la importancia de configurar correctamente las URIs de redirección para mantener la seguridad del flujo OAuth.
 
-### Desafíos Superados
+### 2. Arquitectura Híbrida: Combinando Autenticación Externa con Seguridad Interna
 
-Uno de los principales retos fue la implementación correcta de la autenticación OAuth 2.0 con Google, requiriendo una comprensión detallada del flujo de autorización y la configuración adecuada de las credenciales. Adicionalmente, lograr que los mensajes aparezcan en tiempo real sin necesidad de recargar la página implicó resolver problemas de gestión de conexiones WebSocket y prevención de duplicación de mensajes.
+El desarrollo de un sistema que integra autenticación OAuth 2.0 manteniendo la arquitectura JWT interna demostró la viabilidad de implementar soluciones híbridas de seguridad. Esta aproximación permite aprovechar la conveniencia de los proveedores externos para la autenticación inicial, mientras se conserva el control total sobre la autorización y gestión de sesiones mediante tokens JWT propios. La capacidad de alternar entre autenticación tradicional y OAuth sin comprometer la funcionalidad del sistema evidencia la importancia de diseñar arquitecturas flexibles y escalables.
 
-### Arquitectura y Buenas Prácticas
+### 3. Sincronización en Tiempo Real: Desafíos de la Comunicación Bidireccional
 
-La aplicación de una arquitectura limpia separando responsabilidades en capas (API, domain, infrastructure) ha demostrado ser fundamental para mantener un código escalable y mantenible. La implementación de repositorios, casos de uso y controladores facilita la testing y futuras modificaciones del sistema.
-
-### Experiencia con Tecnologías Modernas
-
-El proyecto me ha proporcionado experiencia práctica con tecnologías actuales del desarrollo web, desde la gestión de bases de datos NoSQL con MongoDB hasta la implementación de interfaces de usuario responsivas. La integración de múltiples tecnologías (Node.js, Express, Socket.io, JWT) en un sistema cohesivo ha fortalecido mi comprensión de ecosistemas tecnológicos complejos.
-
-### Proyección Profesional
-
-Este desarrollo representa una base sólida para futuras implementaciones de sistemas de comunicación en tiempo real y me ha preparado para abordar proyectos de mayor complejidad en el ámbito de sistemas distribuidos y aplicaciones web escalables.
+La implementación de WebSockets con Socket.io para lograr comunicación instantánea entre múltiples usuarios reveló los desafíos inherentes a los sistemas distribuidos en tiempo real. La gestión de conexiones simultáneas, la prevención de duplicación de mensajes y el mantenimiento del estado sincronizado entre clientes requirió un entendimiento profundo de los patrones de comunicación asíncrona. La solución de problemas como la desconexión automática de usuarios y el ordenamiento cronológico de mensajes proporcionó experiencia valiosa en debugging de aplicaciones concurrentes y manejo de eventos en sistemas distribuidos.
 
 ---
 
@@ -217,7 +216,7 @@ Este desarrollo representa una base sólida para futuras implementaciones de sis
 
 ### 👨‍💻 Desarrollado por Jhon Guamán
 **Universidad de las Fuerzas Armadas ESPE**  
-**Carrera: Ingeniería en Software**
+**Carrera: Ingeniería en Tecnologías de la Información**
 
 [![GitHub](https://img.shields.io/badge/GitHub-JhonGta-black?style=flat-square&logo=github)](https://github.com/JhonGta)
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-Jhon%20Guamán-blue?style=flat-square&logo=linkedin)](https://linkedin.com/in/jhon-guaman)
