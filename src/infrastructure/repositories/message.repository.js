@@ -13,7 +13,7 @@ class MessageRepository {
 
   async findById(id) {
     try {
-      return await Message.findById(id).populate("user", "email");
+      return await Message.findById(id).populate("user", "email displayName");
     } catch (error) {
       throw error;
     }
@@ -23,7 +23,7 @@ class MessageRepository {
     try {
       const skip = (page - 1) * limit;
       return await Message.find()
-        .populate("user", "email")
+        .populate("user", "email displayName")
         .sort({ createdAt: -1 })
         .limit(limit)
         .skip(skip);
@@ -36,7 +36,7 @@ class MessageRepository {
     try {
       const skip = (page - 1) * limit;
       return await Message.find({ user: userId })
-        .populate("user", "email")
+        .populate("user", "email displayName")
         .sort({ createdAt: -1 })
         .limit(limit)
         .skip(skip);
@@ -48,7 +48,7 @@ class MessageRepository {
   async findRecent(limit = 50) {
     try {
       return await Message.find()
-        .populate("user", "email")
+        .populate("user", "email displayName")
         .sort({ createdAt: -1 })
         .limit(limit);
     } catch (error) {

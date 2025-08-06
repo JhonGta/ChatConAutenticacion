@@ -12,12 +12,13 @@ class GetMessagesUseCase {
       return messages.map((message) => ({
         id: message._id,
         text: message.text,
-        user: {
-          id: message.user._id,
-          email: message.user.email,
-        },
+        message: message.text, // Compatibilidad con frontend
+        user: message.user ? message.user.email || message.user.displayName : 'Usuario Anónimo',
+        userName: message.user ? message.user.email || message.user.displayName : 'Usuario Anónimo',
+        userId: message.user ? message.user._id : null,
+        timestamp: message.createdAt,
         createdAt: message.createdAt,
-      }));
+      })).filter(msg => msg.text); // Filtrar mensajes sin texto
     } catch (error) {
       throw error;
     }

@@ -43,10 +43,10 @@ router.get('/google/callback',
       console.log('Token:', token.substring(0, 50) + '...');
       
       // Redirigir al frontend con el token
-      res.redirect(`http://localhost:5500/auth-callback.html?token=${token}`);
+      res.redirect(`http://127.0.0.1:5500/auth-callback.html?token=${token}`);
     } catch (error) {
       console.error('Error en callback de Google:', error);
-      res.redirect('http://localhost:5500/client-example.html?error=auth_failed');
+      res.redirect('http://127.0.0.1:5500/client-example.html?error=auth_failed');
     }
   }
 );

@@ -21,14 +21,23 @@ const io = socketIo(server, {
   cors: {
     origin: [
       process.env.CLIENT_URL || "http://localhost:3000",
-      "http://127.0.0.1:5500", // Agrega esta línea
+      "http://127.0.0.1:5500",
+      "http://localhost:5500", // Agregamos localhost:5500
     ],
     methods: ["GET", "POST"],
+    credentials: true
   },
 });
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: [
+    process.env.CLIENT_URL || "http://localhost:3000",
+    "http://127.0.0.1:5500",
+    "http://localhost:5500"
+  ],
+  credentials: true
+}));
 app.use(express.json());
 
 // Inicializar Passport

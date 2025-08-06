@@ -29,8 +29,11 @@ class LoginUserUseCase {
 
     return {
       user: {
+        _id: user._id,
         id: user._id,
         email: user.email,
+        displayName: user.displayName || user.email,
+        isGoogleUser: user.isGoogleUser || false,
         createdAt: user.createdAt,
       },
       token,
